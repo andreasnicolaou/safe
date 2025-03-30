@@ -1,0 +1,76 @@
+{
+  "name": "@andreasnicolaou/safe",
+  "version": "1.0.0",
+  "description": "A simple utility for handling synchronous and asynchronous errors without relying on try-catch blocks.",
+  "main": "dist/index.js",
+  "private": false,
+  "types": "dist/types/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "jest --detectOpenHandles",
+    "format": "prettier --write .",
+    "lint": "eslint --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andreasnicolaou/safe.git"
+  },
+  "bugs": {
+    "url": "https://github.com/andreasnicolaou/safe/issues"
+  },
+  "author": "Andreas Nicolaou <anicolaou66@gmail.com>",
+  "license": "MIT",
+  "jest": {
+    "transform": {
+      "^.+\\.(ts)$": [
+        "ts-jest"
+      ]
+    },
+    "testEnvironment": "node",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
+    ],
+    "fakeTimers": {
+      "enableGlobally": true
+    }
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.9",
+    "@typescript-eslint/eslint-plugin": "^8.26.1",
+    "@typescript-eslint/parser": "^8.26.1",
+    "globals": "^16.0.0",
+    "eslint": "^9.20.1",
+    "eslint-config-prettier": "^10.0.2",
+    "eslint-plugin-prettier": "^5.2.3",
+    "jest": "^29.7.0",
+    "prettier": "3.5.3",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "rxjs": "^7.8.2"
+  },
+  "keywords": [
+    "retry",
+    "timeout",
+    "exponential backoff",
+    "error handling",
+    "asynchronous",
+    "synchronous",
+    "promise",
+    "rxjs",
+    "typescript",
+    "utility",
+    "safe",
+    "async utilities",
+    "error boundaries"
+  ]
+}
