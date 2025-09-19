@@ -81,6 +81,13 @@ describe('safe utilities', () => {
       });
       await expect(lastValueFrom(obs$)).rejects.toThrow('Something went wrong after all observable');
     });
+
+    test('safeObservable handles async errors with logging', async () => {
+      const obs$ = safeObservable(async () => {
+        throw new Error('Async error in observable');
+      });
+      await expect(lastValueFrom(obs$)).rejects.toThrow('Async error in observable');
+    });
   });
 
   describe('custom instances', () => {
@@ -187,6 +194,27 @@ describe('safe utilities', () => {
       jest.runAllTimers();
       const result = await promise;
       expect(isSuccess(result)).toBe(true);
+      jest.useRealTimers();
+    });
+
+    test('should fail after all retries are exhausted', async () => {
+      jest.useFakeTimers();
+      const failingFn = jest.fn().mockRejectedValue(new Error('Persistent error'));
+
+      const promise = safeWithRetries(failingFn, {
+        retries: 2,
+        initialDelayMs: 100,
+      });
+
+      // Advance timers step by step to handle all retries
+      await jest.advanceTimersByTimeAsync(100); // First retry delay
+      await jest.advanceTimersByTimeAsync(200); // Second retry delay
+
+      const result = await promise;
+      expect(isFailure(result)).toBe(true);
+      expect(result[0]).toBeInstanceOf(Error);
+      expect(result[0]?.message).toBe('Persistent error');
+      expect(failingFn).toHaveBeenCalledTimes(3); // Initial attempt + 2 retries
       jest.useRealTimers();
     });
     jest.useRealTimers();
