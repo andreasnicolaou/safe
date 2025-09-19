@@ -49,7 +49,7 @@ export default [
     output: {
       file: 'dist/index.umd.js',
       format: 'umd',
-      name: 'reactiveEventSource',
+      name: 'safe',
       sourcemap: false,
     },
     plugins: [
@@ -68,7 +68,7 @@ export default [
     output: {
       file: 'dist/index.umd.min.js',
       format: 'umd',
-      name: 'reactiveEventSource',
+      name: 'safe',
       sourcemap: false,
     },
     plugins: [
