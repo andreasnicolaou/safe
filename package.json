@@ -1,6 +1,6 @@
 {
   "name": "@andreasnicolaou/safe",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A simple utility for handling synchronous and asynchronous errors without relying on try-catch blocks.",
   "main": "dist/index.js",
   "module": "dist/index.js",
