@@ -103,7 +103,7 @@
     "jest-junit": "^16.0.0",
     "prettier": "3.6.2",
     "rollup": "^4.52.5",
-    "rollup-plugin-dts": "^6.2.3",
+    "rollup-plugin-dts": "^6.3.0",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
