@@ -11,7 +11,7 @@
 ![ESLint](https://img.shields.io/badge/linter-eslint-4B32C3.svg?logo=eslint)
 ![Prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?logo=prettier)
 ![Jest](https://img.shields.io/badge/tested_with-jest-99424f.svg?logo=jest)
-![Maintenance](https://img.shields.io/maintenance/yes/2025)
+![Maintenance](https://img.shields.io/maintenance/yes/2026)
 [![codecov](https://codecov.io/gh/andreasnicolaou/safe/graph/badge.svg?token=9CPNF2XE59)](https://codecov.io/gh/andreasnicolaou/safe)
 
 ![NPM Downloads](https://img.shields.io/npm/dm/%40andreasnicolaou%2Fsafe)
