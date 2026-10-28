@@ -27,6 +27,7 @@ export default [
   // CommonJS build
   {
     input: 'src/index.ts',
+    external: ['rxjs', 'rxjs/operators'],
     output: {
       file: 'dist/index.cjs',
       format: 'cjs',
@@ -87,6 +88,15 @@ export default [
     input: 'src/index.ts',
     output: {
       file: 'dist/index.d.ts',
+      format: 'es',
+    },
+    plugins: [dts()],
+  },
+  // Type definitions for `require` consumers (.d.cts so TypeScript treats them as CommonJS)
+  {
+    input: 'src/index.ts',
+    output: {
+      file: 'dist/index.d.cts',
       format: 'es',
     },
     plugins: [dts()],

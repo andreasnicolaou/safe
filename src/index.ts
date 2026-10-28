@@ -1,6 +1,6 @@
 import { createSafeUtils } from './safe';
 import { SafeReturn } from './types';
-export type { SafeReturn, SafeAsyncReturn, SafeUtilOptions } from './types';
+export type { SafeReturn, SafeAsyncReturn, SafeUtilOptions, RetryOptions } from './types';
 
 const defaultUtils = createSafeUtils();
 export const safe = defaultUtils.safe;

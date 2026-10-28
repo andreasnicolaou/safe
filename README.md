@@ -131,7 +131,21 @@ console.log(isFailure([error, result])); // true
 ```typescript
 const { safe, safeWithRetries } = createSafeUtils({
   logger: (error) => sentry.captureException(error),
-  logErrors: process.env.NODE_ENV === 'production',
+  enableLogErrors: process.env.NODE_ENV === 'production',
+});
+```
+
+## Retries
+
+```typescript
+import { safeWithRetries } from '@andreasnicolaou/safe';
+
+const [error, result] = await safeWithRetries(() => fetch(url), {
+  retries: 3, // extra attempts after the first one (Infinity = until success)
+  initialDelayMs: 100, // doubles per attempt: 100, 200, 400...
+  maxDelayMs: 30_000, // cap for a single delay (default: 30000)
+  jitter: true, // randomise the delay to avoid thundering herds
+  timeoutMs: 5_000, // abandon an attempt that takes too long
 });
 ```
 
