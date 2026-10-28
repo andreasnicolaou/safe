@@ -1,6 +1,6 @@
 import { SafeReturn, SafeAsyncReturn, SafeUtilOptions, RetryOptions } from './types';
 import { from, Observable } from 'rxjs';
-import { calculateDelay, normalizeError, safeTimeout } from './utils';
+import { calculateDelay, normalizeError, normalizeRetries, safeTimeout } from './utils';
 
 /**
  * Creates a set of utility functions for handling errors in synchronous and asynchronous code.
@@ -25,7 +25,23 @@ export const createSafeUtils = (
     }
   ) => SafeAsyncReturn<T>;
 } => {
-  const { enableLogErrors = true, logger = console.error } = deps;
+  const { enableLogErrors = true } = deps;
+
+  /**
+   * Reports an error through the configured logger.
+   * `console.error` is resolved on each call rather than captured up front, so replacing
+   * `console.error` after import (Sentry setup, log capture, test mocks) still takes effect.
+   */
+  const logError = (error: Error): void => {
+    if (!enableLogErrors) {
+      return;
+    }
+    if (deps.logger) {
+      deps.logger(error);
+    } else {
+      console.error(error);
+    }
+  };
 
   /**
    * Executes a function safely, returning a tuple of error and result.
@@ -41,9 +57,7 @@ export const createSafeUtils = (
       return [null, fn()];
     } catch (error) {
       const normalizedError = normalizeError(error);
-      if (enableLogErrors) {
-        logger(normalizedError);
-      }
+      logError(normalizedError);
       return [normalizedError, undefined];
     }
   };
@@ -62,9 +76,7 @@ export const createSafeUtils = (
       return [null, await fn()];
     } catch (error) {
       const normalizedError = normalizeError(error);
-      if (enableLogErrors) {
-        logger(normalizedError);
-      }
+      logError(normalizedError);
       return [normalizedError, undefined];
     }
   };
@@ -85,9 +97,7 @@ export const createSafeUtils = (
           return [null, await promise] as SafeReturn<T>;
         } catch (error) {
           const normalizedError = normalizeError(error);
-          if (enableLogErrors) {
-            logger(normalizedError);
-          }
+          logError(normalizedError);
           return [normalizedError, undefined] as SafeReturn<T>;
         }
       })
@@ -113,9 +123,7 @@ export const createSafeUtils = (
             })
             .catch((error) => {
               const normalizedError = normalizeError(error);
-              if (enableLogErrors) {
-                logger(normalizedError);
-              }
+              logError(normalizedError);
               subscriber.error(normalizedError);
             });
         } else {
@@ -124,9 +132,7 @@ export const createSafeUtils = (
         }
       } catch (error) {
         const normalizedError = normalizeError(error);
-        if (enableLogErrors) {
-          logger(normalizedError);
-        }
+        logError(normalizedError);
         subscriber.error(normalizedError);
       }
     });
@@ -149,9 +155,7 @@ export const createSafeUtils = (
             .then((data) => [null, data] as [null, T])
             .catch((error) => {
               const normalizedError = normalizeError(error);
-              if (enableLogErrors) {
-                logger(normalizedError);
-              }
+              logError(normalizedError);
               return [normalizedError, undefined] as [Error, undefined];
             })
         )
@@ -161,6 +165,8 @@ export const createSafeUtils = (
 
   /**
    * Executes a function with retries, returning a promise of a tuple of error and result.
+   * `options.retries` is clamped to a whole number of retries, so an out-of-range value
+   * still runs the function once instead of reporting a success that never happened.
    * @param {Function} fn - The asynchronous function to execute.
    * @param {RetryOptions} options - The retry options.
    * @returns {SafeAsyncReturn<T>} A promise that resolves to a tuple containing an error (if any) and the result.
@@ -173,24 +179,26 @@ export const createSafeUtils = (
     fn: () => Promise<T>,
     options: RetryOptions & { timeoutMs?: number }
   ): SafeAsyncReturn<T> => {
+    const retries = normalizeRetries(options.retries);
     let normalizedError: Error | null = null;
-    for (let attempt = 0; attempt <= options.retries; attempt++) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         const result = await (options.timeoutMs ? safeTimeout(fn(), options.timeoutMs) : fn());
         return [null, result];
       } catch (error) {
         normalizedError = normalizeError(error);
-        if (enableLogErrors) {
-          logger(normalizedError);
-        }
-        if (attempt < options.retries) {
+        logError(normalizedError);
+        if (attempt < retries) {
           const delay = calculateDelay(attempt, options);
           await new Promise((r) => setTimeout(r, delay));
         }
       }
     }
 
-    return [normalizedError, undefined];
+    // `retries` is never negative, so the loop always runs at least once and any exit
+    // without a return has recorded an error. The fallback keeps the "success with no
+    // result" tuple unreachable regardless of future changes to the loop.
+    return [normalizedError ?? new Error('safeWithRetries: the operation never ran'), undefined];
   };
 
   return { safe, safeAsync, safeAll, safeObservable, safeObservableAll, safeWithRetries };

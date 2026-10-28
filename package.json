@@ -2,11 +2,11 @@
   "name": "@andreasnicolaou/safe",
   "version": "2.2.0",
   "description": "A simple utility for handling synchronous and asynchronous errors without relying on try-catch blocks.",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "browser": "dist/index.umd.min.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "browser": "./dist/index.umd.min.js",
   "private": false,
-  "types": "dist/index.d.ts",
+  "types": "./dist/index.d.ts",
   "type": "module",
   "files": [
     "dist",
@@ -18,8 +18,12 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
       "browser": "./dist/index.umd.min.js",
-      "types": "./dist/index.d.ts"
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
@@ -27,6 +31,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint --fix",
+    "lint:ci": "eslint",
     "test": "jest --detectOpenHandles",
     "test:ci": "cross-env JEST_JUNIT_CLASSNAME=\"{filepath}\" jest --reporters=default --reporters=jest-junit",
     "test:watch": "jest --watch",
@@ -54,7 +59,7 @@
       },
       {
         "path": "dist/index.cjs",
-        "maxSize": "10kB",
+        "maxSize": "4kB",
         "compression": "gzip"
       },
       {
@@ -87,28 +92,28 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^29.0.3",
     "@rollup/plugin-node-resolve": "^16.0.3",
-    "@rollup/plugin-terser": "^1.0.0",
-    "@rollup/plugin-typescript": "^12.3.0",
+    "@rollup/plugin-terser": "^1.0.2",
+    "@rollup/plugin-typescript": "^12.3.1",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.9.5",
-    "@typescript-eslint/eslint-plugin": "^8.64.0",
-    "@typescript-eslint/parser": "^8.64.0",
+    "@types/node": "^26.6.5",
+    "@typescript-eslint/eslint-plugin": "^8.72.1",
+    "@typescript-eslint/parser": "^8.72.1",
     "@eslint/js": "^10.0.1",
-    "@eslint/eslintrc": "^3.3.6",
-    "bundlewatch": "^0.4.2",
+    "@eslint/eslintrc": "^3.3.7",
+    "bundlewatch": "^1.1.0",
     "cross-env": "^10.1.0",
-    "eslint": "^10.7.0",
+    "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.6",
-    "globals": "^17.7.0",
-    "jest": "^30.4.2",
-    "jest-junit": "^16.0.0",
-    "prettier": "3.8.1",
-    "rollup": "^4.62.2",
-    "rollup-plugin-dts": "^6.4.1",
-    "ts-jest": "^29.4.11",
+    "eslint-plugin-prettier": "^5.5.7",
+    "globals": "^17.13.0",
+    "jest": "^30.5.2",
+    "jest-junit": "^17.0.0",
+    "prettier": "3.9.10",
+    "rollup": "^4.65.1",
+    "rollup-plugin-dts": "^6.5.1",
+    "ts-jest": "^29.4.15",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "rxjs": "^7.8.2"

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-jest.spyOn(console, 'error').mockImplementation(() => {});
 import {
   safe,
   safeAsync,
@@ -9,16 +7,24 @@ import {
   isSuccess,
   isFailure,
   SafeReturn,
+  RetryOptions,
   safeWithRetries,
 } from './index';
 import { lastValueFrom } from 'rxjs';
 
 describe('safe utilities', () => {
-  describe('all instances', () => {
-    afterAll(() => {
-      jest.restoreAllMocks();
-    });
+  // These tests deliberately throw, and the default utils log through console.error.
+  // Silencing per test (rather than once at module scope) keeps one describe block
+  // from restoring a live console.error that the next block then writes stack traces to.
+  beforeEach(() => {
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe('all instances', () => {
     test('safe handles sync success', () => {
       const [err, result] = safe(() => 42);
       expect(err).toBeNull();
@@ -93,12 +99,7 @@ describe('safe utilities', () => {
   describe('custom instances', () => {
     const mockLogger = jest.fn();
     beforeEach(() => {
-      jest.spyOn(console, 'error').mockImplementation(() => {});
       mockLogger.mockClear();
-    });
-
-    afterAll(() => {
-      jest.restoreAllMocks();
     });
 
     test('respects enableLogErrors: false', () => {
@@ -128,6 +129,36 @@ describe('safe utilities', () => {
     });
   });
 
+  describe('logger binding', () => {
+    test('default instance honours a console.error replaced after import', () => {
+      const original = console.error;
+      const seen: unknown[] = [];
+      console.error = (...args: unknown[]): void => {
+        seen.push(args[0]);
+      };
+      try {
+        safe(() => {
+          throw new Error('late bound');
+        });
+      } finally {
+        console.error = original;
+      }
+      // The logger used to be captured when the module was first imported,
+      // so a later swap (Sentry setup, log capture) was silently ignored.
+      expect(seen).toEqual([new Error('late bound')]);
+    });
+
+    test('custom logger still wins over console.error', () => {
+      const mockLogger = jest.fn();
+      const { safe: safeFn } = createSafeUtils({ logger: mockLogger });
+      safeFn(() => {
+        throw new Error('routed to custom logger');
+      });
+      expect(mockLogger).toHaveBeenCalledWith(new Error('routed to custom logger'));
+      expect(console.error).not.toHaveBeenCalled();
+    });
+  });
+
   describe('type guards', () => {
     test('isSuccess should narrow types correctly', () => {
       const success: SafeReturn<number> = [null, 42];
@@ -146,6 +177,68 @@ describe('safe utilities', () => {
 
   describe('retry behavior', () => {
     jest.useFakeTimers();
+
+    test('should run once when retries is negative instead of skipping the call', async () => {
+      const fn = jest.fn().mockResolvedValue('ok');
+      const result = await safeWithRetries(fn, { retries: -1 });
+      expect(fn).toHaveBeenCalledTimes(1);
+      expect(isSuccess(result)).toBe(true);
+      expect(result[1]).toBe('ok');
+    });
+
+    test('should report a real failure when a JS caller omits retries', async () => {
+      const fn = jest.fn().mockRejectedValue(new Error('nope'));
+      const result = await safeWithRetries(fn, {} as RetryOptions);
+      expect(fn).toHaveBeenCalledTimes(1);
+      // Previously returned [null, undefined], which isSuccess reported as a success.
+      expect(isSuccess(result)).toBe(false);
+      expect(isFailure(result)).toBe(true);
+      expect(result[0]?.message).toBe('nope');
+    });
+
+    test('should never report success without a result', async () => {
+      const fn = jest.fn().mockResolvedValue('ok');
+      for (const retries of [-5, 0, NaN, undefined as unknown as number]) {
+        const [error, value] = await safeWithRetries(fn, { retries });
+        expect(error === null && value === undefined).toBe(false);
+      }
+    });
+
+    test('should not leave a timeout timer pending after a fast success', async () => {
+      jest.useFakeTimers();
+      const before = jest.getTimerCount();
+      const result = await safeWithRetries(async () => 'fast', { retries: 2, timeoutMs: 60_000 });
+      expect(result).toEqual([null, 'fast']);
+      expect(jest.getTimerCount()).toBe(before);
+    });
+
+    test('should still retry when a JS caller passes retries as a numeric string', async () => {
+      jest.useFakeTimers();
+      const failingFn = jest.fn().mockRejectedValue(new Error('Persistent error'));
+      const promise = safeWithRetries(failingFn, { retries: '2' as unknown as number, initialDelayMs: 100 });
+      await jest.advanceTimersByTimeAsync(100);
+      await jest.advanceTimersByTimeAsync(200);
+      const result = await promise;
+      // The pre-clamp loop coerced "2" via `<=`; clamping must not silently drop to zero retries.
+      expect(failingFn).toHaveBeenCalledTimes(3);
+      expect(isFailure(result)).toBe(true);
+    });
+
+    test('should keep retrying until success when retries is Infinity', async () => {
+      jest.useFakeTimers();
+      const failingFn = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('fail 1'))
+        .mockRejectedValueOnce(new Error('fail 2'))
+        .mockRejectedValueOnce(new Error('fail 3'))
+        .mockResolvedValue('success');
+      const promise = safeWithRetries(failingFn, { retries: Infinity, initialDelayMs: 100 });
+      await jest.advanceTimersByTimeAsync(100 + 200 + 400);
+      const result = await promise;
+      expect(failingFn).toHaveBeenCalledTimes(4);
+      expect(result).toEqual([null, 'success']);
+    });
+
     test('should succeed on first attempt', async () => {
       const successFn = jest.fn().mockResolvedValue('success');
       const result = await safeWithRetries(successFn, { retries: 3 });

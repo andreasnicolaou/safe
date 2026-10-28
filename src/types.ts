@@ -7,7 +7,10 @@ export interface SafeUtilOptions {
 }
 
 export interface RetryOptions {
+  /** Extra attempts after the first one. `Infinity` retries until success. */
   retries: number;
   initialDelayMs?: number;
+  /** Upper bound for a single backoff delay, so exponential growth cannot run away. Defaults to 30000ms. */
+  maxDelayMs?: number;
   jitter?: boolean;
 }
